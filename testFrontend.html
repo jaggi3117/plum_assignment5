@@ -1,0 +1,195 @@
+<!doctype html>
+<html>
+    <head>
+        <title>plum-assignment5-testpage</title>
+    </head>
+    <body>
+        <h1>plum-assignment5-testpage</h1>
+
+        <hr />
+
+        <h3>attach an image here</h3>
+        <form id="imageForm">
+            <input
+                type="file"
+                id="imageInput"
+                name="image"
+                accept="image/*"
+                required
+            />
+            <button type="submit" id="submitImageBtn" disabled>
+                process image
+            </button>
+            <p>File: <span id="fileName">none</span></p>
+        </form>
+
+        <hr />
+
+        <h3>Or... insert some text here</h3>
+        <form id="textForm">
+            <textarea
+                id="textInput"
+                placeholder="e.g., dentist tmrw at 4pm"
+                style="width: 300px; height: 80px"
+            ></textarea
+            ><br />
+            <button type="submit" id="submitTextBtn">Process Text</button>
+        </form>
+
+        <hr />
+
+        <h2>Logs from my backend</h2>
+        <div
+            id="logContainer"
+            style="
+                border: 1px solid black;
+                padding: 10px;
+                height: 300px;
+                overflow-y: scroll;
+                font-family: monospace;
+            "
+        >
+            <p>...!!..</p>
+        </div>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const API_BASE_URL = "http://localhost:3000/api/v1";
+
+                const logContainer = document.getElementById("logContainer");
+                const imageForm = document.getElementById("imageForm");
+                const imageInput = document.getElementById("imageInput");
+                const fileNameSpan = document.getElementById("fileName");
+                const submitImageBtn =
+                    document.getElementById("submitImageBtn");
+                const textForm = document.getElementById("textForm");
+                const textInput = document.getElementById("textInput");
+                const submitTextBtn = document.getElementById("submitTextBtn");
+
+                let pollingInterval = null;
+
+                function addLog(message) {
+                    const p = document.createElement("p");
+                    p.innerHTML = message;
+                    logContainer.appendChild(p);
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                }
+
+                function stopPolling() {
+                    if (pollingInterval) clearInterval(pollingInterval);
+                    pollingInterval = null;
+                }
+
+                async function checkStatus(jobId) {
+                    try {
+                        const response = await fetch(
+                            `${API_BASE_URL}/status/${jobId}`,
+                        );
+                        const data = await response.json();
+
+                        addLog(
+                            `checking status for ${jobId}... status: ${data.status}`,
+                        );
+
+                        if (
+                            data.status === "completed" ||
+                            data.status === "failed"
+                        ) {
+                            stopPolling();
+                            addLog(
+                                "<strong> - - - JOB FINISHED - - -</strong>",
+                            );
+                            addLog(
+                                `<pre>${JSON.stringify(data, null, 2)}</pre>`,
+                            );
+                        }
+                    } catch (error) {
+                        stopPolling();
+                        addLog(`error while fetching status: ${error.message}`);
+                    }
+                }
+
+                async function startJobPolling(jobId) {
+                    stopPolling();
+                    addLog(`job submitted with ID: <code>${jobId}</code>`);
+                    pollingInterval = setInterval(
+                        () => checkStatus(jobId),
+                        2000,
+                    );
+                }
+
+                imageInput.addEventListener("change", () => {
+                    if (imageInput.files.length > 0) {
+                        fileNameSpan.textContent = imageInput.files[0].name;
+                        submitImageBtn.disabled = false;
+                    } else {
+                        fileNameSpan.textContent = "none";
+                        submitImageBtn.disabled = true;
+                    }
+                });
+
+                imageForm.addEventListener("submit", async (e) => {
+                    e.preventDefault();
+                    logContainer.innerHTML = "";
+                    addLog("uploading image...");
+
+                    const formData = new FormData();
+                    formData.append("image", imageInput.files[0]);
+
+                    submitImageBtn.disabled = true;
+
+                    try {
+                        const response = await fetch(
+                            `${API_BASE_URL}/schedule`,
+                            {
+                                method: "POST",
+                                body: formData,
+                            },
+                        );
+                        const data = await response.json();
+                        if (!response.ok)
+                            throw new Error(data.error || "HTTP Error");
+                        startJobPolling(data.jobId);
+                    } catch (error) {
+                        addLog(`upload failed: ${error.message}`);
+                    } finally {
+                        submitImageBtn.disabled = false;
+                    }
+                });
+
+                textForm.addEventListener("submit", async (e) => {
+                    e.preventDefault();
+                    logContainer.innerHTML = "";
+                    addLog("submitting text to my backend !!...");
+
+                    const text = textInput.value;
+                    if (!text.trim()) {
+                        addLog("text can't be empty.");
+                        return;
+                    }
+
+                    submitTextBtn.disabled = true;
+
+                    try {
+                        const response = await fetch(
+                            `${API_BASE_URL}/schedule`,
+                            {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ text }),
+                            },
+                        );
+                        const data = await response.json();
+                        if (!response.ok)
+                            throw new Error(data.error || "HTTP Error");
+                        startJobPolling(data.jobId);
+                    } catch (error) {
+                        addLog(`submission failed: ${error.message}`);
+                    } finally {
+                        submitTextBtn.disabled = false;
+                    }
+                });
+            });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,23 @@
+# Dependencies
+/node_modules
+
+# Environment
+.env
+.env.*
+
+# Project structure specific exclusions
+# Exclude node_modules from the worker directory
+/worker/node_modules
+
+# Exclude .env from the api-server directory
+/api-server/.env
+
+# Exclude .env from the worker directory
+/worker/.env
+
+# Logs and other generated files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
