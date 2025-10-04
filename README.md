@@ -1,4 +1,5 @@
 
+# [testlink](http://34.93.18.152/)
 # Assignment 5 
 
 **Focus Area:** OCR -> Entity Extraction -> Normalization
@@ -27,11 +28,8 @@ Expected Output (JSON):
 
 ```json
 {
-
-  "raw_text": "Book dentist next Friday at 3pm",
-
+ "raw_text": "Book dentist next Friday at 3pm",
  "confidence": 0.90
-
 }
 ```
 
@@ -367,3 +365,4 @@ curl http://localhost:3000/api/v1/status/a1b2c3d4-e5f6-7890-1234-567890abcdef
     "errorMessage": "Ambiguous or missing date or department."
 }
 ```
+
